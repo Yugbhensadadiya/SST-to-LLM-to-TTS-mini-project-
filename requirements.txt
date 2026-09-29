@@ -1,0 +1,7 @@
+faster-whisper
+groq
+pyttsx3
+sounddevice
+scipy
+python-dotenv
+imageio-ffmpeg
