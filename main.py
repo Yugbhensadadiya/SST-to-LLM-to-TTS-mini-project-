@@ -29,7 +29,7 @@ def main():
             print("Transcribing audio...")
             text, language = transcribe_audio(audio_path)
 
-            if not text or not text.strip():
+            if not text:
                 print("\n(No speech detected. Listening again...)\n")
                 continue
 

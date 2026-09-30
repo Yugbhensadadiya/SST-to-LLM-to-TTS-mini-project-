@@ -1,4 +1,4 @@
-import collections
+from collections import deque
 import os
 import time
 import numpy as np
@@ -15,7 +15,7 @@ def record_audio(
     initial_timeout=4.5,
 ):
     block_size = int(sample_rate * block_duration)
-    pre_speech_blocks = collections.deque(maxlen=int(0.4 / block_duration))
+    pre_speech_blocks = deque(maxlen=int(0.4 / block_duration))
     recorded_blocks = []
 
     print("\nListening... Speak your query.")
