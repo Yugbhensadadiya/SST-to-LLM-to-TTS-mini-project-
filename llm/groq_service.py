@@ -5,10 +5,10 @@ client = Groq(api_key=GROQ_API_KEY)
 
 FALLBACK_MESSAGE = "Sorry i dont know information related to your query "
 
+
 def is_unknown_response(answer: str) -> bool:
     lower = answer.lower().strip().rstrip(".!")
 
-    # Exact refusal phrases
     exact_refusals = {
         "sorry i dont know information related to your query",
         "sorry, i don't know information related to your query",
@@ -24,32 +24,23 @@ def is_unknown_response(answer: str) -> bool:
     if lower in exact_refusals:
         return True
 
-    # Short refusals (under 80 chars) that start with refusal language
-    if len(lower) < 80 and (
-        lower.startswith("sorry, i don't know")
-        or lower.startswith("sorry i don't know")
-        or lower.startswith("i don't have information")
-        or lower.startswith("i do not have information")
-        or lower.startswith("i cannot answer")
-        or lower.startswith("i can't answer")
-    ):
-        return True
+    prefix_refusals = (
+        "sorry, i don't know",
+        "sorry i don't know",
+        "i don't have information",
+        "i do not have information",
+        "i cannot answer",
+        "i can't answer",
+    )
+    return len(lower) < 80 and lower.startswith(prefix_refusals)
 
-    return False
 
 def ask_groq(text, language, history=None):
-
     if not text or not text.strip():
         return FALLBACK_MESSAGE
 
-    if language == "gu":
-        lang_instruction = "Answer in Gujarati."
-
-    elif language == "hi":
-        lang_instruction = "Answer in Hindi."
-
-    else:
-        lang_instruction = "Answer in English."
+    lang_map = {"gu": "Answer in Gujarati.", "hi": "Answer in Hindi."}
+    lang_instruction = lang_map.get(language, "Answer in English.")
 
     system_prompt = f"""You are a knowledgeable and helpful voice AI assistant. You can answer general knowledge, educational, scientific, university, and conversational queries.
 
@@ -64,8 +55,7 @@ Guidelines:
     messages = [{"role": "system", "content": system_prompt}]
 
     if history:
-        # Keep up to the last 6 messages to preserve conversational context
-        messages.extend(history[-6:])
+        messages.extend(history[-30:])
 
     messages.append({"role": "user", "content": text})
 
@@ -73,7 +63,7 @@ Guidelines:
         model="qwen/qwen3.8-27b",
         messages=messages,
         temperature=0.3,
-        max_completion_tokens=500
+        max_completion_tokens=500,
     )
 
     content = response.choices[0].message.content or ""

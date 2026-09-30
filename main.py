@@ -1,14 +1,15 @@
 import sys
 import time
-
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
-
 from recorder.recorder import record_audio
 from stt.whisper_stt import transcribe_audio
 from llm.groq_service import ask_groq
 from tts.pyttsx3_tts import speak
 from utils.language_router import get_language_name
+from utils.memory import ConversationMemory
+from config.settings import MAX_CONVERSATION_HISTORY
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 EXIT_KEYWORDS = {"exit", "quit", "bye", "goodbye", "stop", "close"}
 
@@ -19,7 +20,7 @@ def main():
     print("=" * 45)
     print("Tip: Say 'exit', 'quit', or 'bye' (or press Ctrl+C) to stop.\n")
 
-    conversation_history = []
+    memory = ConversationMemory(max_turns=MAX_CONVERSATION_HISTORY)
 
     try:
         while True:
@@ -38,7 +39,6 @@ def main():
             print("\nUser:")
             print(text)
 
-            # Check if user said an exit command
             cleaned_input = text.lower().strip().rstrip(".!?")
             if cleaned_input in EXIT_KEYWORDS:
                 farewell = "Goodbye! Have a great day."
@@ -49,7 +49,7 @@ def main():
             answer = ask_groq(
                 text=text,
                 language=language,
-                history=conversation_history
+                history=memory.get_messages(),
             )
 
             print("\nAssistant:")
@@ -57,11 +57,8 @@ def main():
 
             speak(answer)
 
-            # Keep conversation history for context in follow-up queries
-            conversation_history.append({"role": "user", "content": text})
-            conversation_history.append({"role": "assistant", "content": answer})
+            memory.add_turn(text, answer)
 
-            # Small pause before listening again so speaker echo isn't picked up
             time.sleep(0.5)
             print("\n" + "-" * 45)
 
